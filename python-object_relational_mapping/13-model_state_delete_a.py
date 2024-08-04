@@ -16,7 +16,10 @@ if __name__ == "__main__":
     dbname = argv[3]
 
     # Create engine to connect to the database
-    engine = create_engine(f'mysql+mysqldb://{username}:{password}@localhost:3306/{dbname}')
+    engine = create_engine(
+        f'mysql+mysqldb://{username}:{password}@localhost:3306/{dbname}',
+        pool_pre_ping=True
+    )
 
     # Create a configured "Session" class
     Session = sessionmaker(bind=engine)
@@ -24,15 +27,20 @@ if __name__ == "__main__":
     # Create a Session instance
     session = Session()
 
-    # Query all State objects with a name containing the letter 'a'
-    states_to_delete = session.query(State).filter(State.name.like('%a%')).all()
+    try:
+        # Query all State objects with a name containing the letter 'a'
+        states_to_delete = session.query(State).filter(State.name.like('%a%')).all()
 
-    # Delete all filtered State objects
-    for state in states_to_delete:
-        session.delete(state)
+        # Delete all filtered State objects
+        for state in states_to_delete:
+            session.delete(state)
 
-    # Commit the changes
-    session.commit()
+        # Commit the changes
+        session.commit()
 
-    # Close the session
-    session.close()
+    except Exception as e:
+        session.rollback()
+        print(f"Error: {e}")
+    finally:
+        # Close the session
+        session.close()
